@@ -62,19 +62,20 @@ class NRPreprocessor(Preprocessor[MethodKey, str, MethodDictValue]):
                         method_node, "formal_parameters", 1
                     )
 
-                    method_params_text = (
-                        method_params_node.text.decode("utf8")
-                        if method_params_node
-                        else ""
-                    )
-                    method_params_text = method_params_text[1: len(method_params_text) - 1] # remove parens
-
-                    method_params = tuple([arg for arg in method_params_text.split(",") if arg])
+                    method_params = []
+                    if method_params_node:
+                        param_nodes = find_all_children_of_types(method_params_node, {"formal_parameter"})
+                        for param_node in param_nodes:
+                            # extract only param type & name (to avoid annotations, which is commonly used in Spring projects)
+                            param_type = param_node.child_by_field_name('type').text.decode('utf-8')
+                            param_name = param_node.child_by_field_name('name').text.decode('utf-8')
+                            method_params.append('%s %s' (param_type, param_name))
+          
                     # Append to method_dict
                     key = MethodKey(
                         method_container,
                         method_name if method_node.type=="method_declaration" else "<init>",
-                        method_params,
+                        tuple(method_params),
                     )
                     unique_dict[method_name].append(key)
                     
